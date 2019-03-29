@@ -14,9 +14,9 @@ const ItemCtrl = (function(){
   // Data Structure / State
   const data = {
     items: [
-      // {id: 0, name: 'Steak Dinner', calories: 1200},
-      // {id: 1, name: 'Cookie', calories: 400},
-      // {id: 2, name: 'Eggs', calories: 300}
+      // {id: 0, course: 'Math', credit: 3, grad: 4},
+      // {id: 0, course: 'Math', credit: 3, grad: 4},
+      // {id: 0, course: 'Math', credit: 3, grad: 4}
     ],
     currentItem: null,
     totalCgpa: 0
@@ -37,9 +37,9 @@ const ItemCtrl = (function(){
       }
 
       // Credit to number
-      credit = parseInt(credit);
+      credit = parseFloat(credit);
       // grad to number
-      grad = parseInt(grad);
+      grad = parseFloat(grad);
       // Create new item
       newItem = new Item(ID, course, credit, grad);
 
@@ -47,6 +47,74 @@ const ItemCtrl = (function(){
       data.items.push(newItem);
 
       return newItem;
+    },
+    getItemById: function(id){
+      let found = null;
+      // Loop through items
+      data.items.forEach(function(item){
+        if(item.id === id){
+          found = item;
+        }
+      });
+      return found;
+    },
+    updateItem: function(course, credit, grad){
+      // Credit to number
+      credit = parseFloat(credit);
+      // grad to number
+      grad = parseFloat(grad);
+
+      let found = null;
+
+      data.items.forEach(function(item){
+        if(item.id === data.currentItem.id){
+          item.course = course;
+          item.credit = credit;
+          item.grad = grad;
+          found = item;
+        }
+      });
+
+      return found;
+    },
+    deleteItem: function(id){
+      // Get ids
+      ids = data.items.map(function(item){
+        return item.id;
+      });
+
+      // Get index
+      const index = ids.indexOf(id);
+
+      // Remove item
+      data.items.splice(index, 1);
+    },
+    clearAllItems: function(){
+      data.items = [];
+    },
+    setCurrentItem: function(item){
+      data.currentItem = item;
+    },
+    getCurrentItem: function(){
+      return data.currentItem;
+    },
+    getTotalCgpa: function() {
+      let totalCredit = 0;
+      let sumOfGradxCredit = 0;
+
+      // count total credit
+      data.items.forEach(function(cre){
+        totalCredit += cre.credit;
+      });
+      // multiply gradpoint and credit and sum them
+      data.items.forEach(function(gpa){
+        sumOfGradxCredit += (gpa.credit * gpa.grad);
+      })
+      // Set total cgpa in data structure
+      data.totalCgpa = (sumOfGradxCredit/totalCredit);
+
+      // Return total
+      return data.totalCgpa;
     },
     logData: function(){
       return data;
@@ -60,10 +128,16 @@ const ItemCtrl = (function(){
 const UICtrl = (function(){
   const UISelectors = {
     itemList: '#item-list',
+    listItems: '#item-list li',
     addBtn: '.add-btn',
+    updateBtn: '.update-btn',
+    deleteBtn: '.delete-btn',
+    backBtn: '.back-btn',
+    clearBtn: '.clear-btn',
     itemCourse: '#item-course',
     itemCredit: '#item-credit',
-    itemgrad: '#item-grad'
+    itemgrad: '#item-grad',
+    totalCgpa: '.total-cgpa'
   }
   
   // Public methods
@@ -72,8 +146,11 @@ const UICtrl = (function(){
       let html = '';
 
       items.forEach(function(item){
-        html += `<li class="collection-item" id="item-${item.id}">
-        <strong>${item.course}: </strong> <em>${item.credit} </em><em>${item.grad}</em>
+        html += `<li class="collection-item center" id="item-${item.id}">
+        Course: <strong style="margin-right:50px">${item.course}</strong>
+      Credit: <strong style="margin-right:50px">${item.credit}</strong>
+      GradPoint: <strong >${item.grad}</strong>
+    
         <a href="#" class="secondary-content">
           <i class="edit-item fa fa-pencil"></i>
         </a>
@@ -96,24 +173,84 @@ const UICtrl = (function(){
       // Create li element
       const li = document.createElement('li');
       // Add class
-      li.className = 'collection-item';
+      li.className = 'collection-item center';
       // Add ID
       li.id = `item-${item.id}`;
       // Add HTML
-      li.innerHTML = `<strong>${item.course}: </strong> <em>${item.credit} </em><em>${item.grad}</em>
+      li.innerHTML = `
+      Course: <strong style="margin-right:50px">${item.course}</strong>
+      Credit: <strong style="margin-right:50px">${item.credit}</strong>
+      GradPoint: <strong >${item.grad}</strong> 
       <a href="#" class="secondary-content">
         <i class="edit-item fa fa-pencil"></i>
       </a>`;
       // Insert item
       document.querySelector(UISelectors.itemList).insertAdjacentElement('beforeend', li)
     },
+    updateListItem: function(item){
+      let listItems = document.querySelectorAll(UISelectors.listItems);
+
+      // Turn Node list into array
+      listItems = Array.from(listItems);
+
+      listItems.forEach(function(listItem){
+        const itemID = listItem.getAttribute('id');
+
+        if(itemID === `item-${item.id}`){
+          document.querySelector(`#${itemID}`).innerHTML = `Course: <strong style="margin-right:50px">${item.course}</strong>
+          Credit: <strong style="margin-right:50px">${item.credit}</strong>
+          GradPoint: <strong >${item.grad}</strong>
+           <a href="#" class="secondary-content">
+            <i class="edit-item fa fa-pencil"></i>
+           </a>
+           `;
+        }
+      })
+    },
+    deleteListItem: function(id){
+      const itemID = `#item-${id}`;
+      const item = document.querySelector(itemID);
+      item.remove();
+    },
     clearInput: function(){
       document.querySelector(UISelectors.itemCourse).value = '';
       document.querySelector(UISelectors.itemCredit).value = '';
       document.querySelector(UISelectors.itemgrad).value = '';
     },
+    addItemToForm: function(){
+      document.querySelector(UISelectors.itemCourse).value = ItemCtrl.getCurrentItem().course;
+      document.querySelector(UISelectors.itemCredit).value = ItemCtrl.getCurrentItem().credit;
+      document.querySelector(UISelectors.itemgrad).value = ItemCtrl.getCurrentItem().grad;
+      UICtrl.showEditState();
+    },
+    removeItems: function(){
+      let listItems = document.querySelectorAll(UISelectors.listItems);
+
+      // Turn Node list into array
+      listItems = Array.from(listItems);
+
+      listItems.forEach(function(item){
+        item.remove();
+      })
+    },
     hideList: function(){
       document.querySelector(UISelectors.itemList).style.display = 'none';
+    },
+    showTotalCgpa: function(totalCgpa){
+      document.querySelector(UISelectors.totalCgpa).textContent = totalCgpa;
+    },
+    clearEditState: function(){
+      UICtrl.clearInput();
+      document.querySelector(UISelectors.updateBtn).style.display = 'none';
+      document.querySelector(UISelectors.deleteBtn).style.display = 'none';
+      document.querySelector(UISelectors.backBtn).style.display = 'none';
+      document.querySelector(UISelectors.addBtn).style.display = 'inline';
+    },
+    showEditState: function(){
+      document.querySelector(UISelectors.updateBtn).style.display = 'inline';
+      document.querySelector(UISelectors.deleteBtn).style.display = 'inline';
+      document.querySelector(UISelectors.backBtn).style.display = 'inline';
+      document.querySelector(UISelectors.addBtn).style.display = 'none';
     },
     getSelectors: function(){
       return UISelectors;
@@ -132,6 +269,30 @@ const App = (function(ItemCtrl, UICtrl){
 
     // Add item event
     document.querySelector(UISelectors.addBtn).addEventListener('click', itemAddSubmit);
+
+    // Disable submit on enter
+    document.addEventListener('keypress', function(e){
+      if(e.keyCode === 13 || e.which === 13){
+        e.preventDefault();
+        return false;
+      }
+    }); 
+
+    // Edit icon click event
+    document.querySelector(UISelectors.itemList).addEventListener('click', itemEditClick);
+
+    // Update item event
+    document.querySelector(UISelectors.updateBtn).addEventListener('click', itemUpdateSubmit);
+
+    // Delete item event
+    document.querySelector(UISelectors.deleteBtn).addEventListener('click', itemDeleteSubmit);
+
+    // Back button event
+    document.querySelector(UISelectors.backBtn).addEventListener('click', UICtrl.clearEditState);
+
+    // Clear item event
+    document.querySelector(UISelectors.clearBtn).addEventListener('click', clearAllItemsClick);
+
   }
 
   // Add item submit
@@ -147,6 +308,10 @@ const App = (function(ItemCtrl, UICtrl){
       // Add item to UI list
       UICtrl.addListItem(newItem);
 
+      // Get total cgpa
+      const totalCgpa = ItemCtrl.getTotalCgpa();
+      // Add total cgpa to UI
+      UICtrl.showTotalCgpa(totalCgpa);
       // Clear fields
       UICtrl.clearInput();
     }
@@ -154,9 +319,96 @@ const App = (function(ItemCtrl, UICtrl){
     e.preventDefault();
   }
 
+  // Click edit item
+  const itemEditClick = function(e){
+    if(e.target.classList.contains('edit-item')){
+      // Get list item id
+      const listId = e.target.parentNode.parentNode.id;
+
+      // Break into an array
+      const listIdArr = listId.split('-');
+
+      // Get the actual id
+      const id = parseFloat(listIdArr[1]);
+
+      // Get item
+      const itemToEdit = ItemCtrl.getItemById(id);
+
+      // Set current item
+      ItemCtrl.setCurrentItem(itemToEdit);
+
+      // Add item to form
+      UICtrl.addItemToForm();
+    }
+
+    e.preventDefault();
+  }
+
+  // Update item submit
+  const itemUpdateSubmit = function(e){
+    // Get item input
+    const input = UICtrl.getItemInput();
+    
+    // Update item
+    const updatedItem = ItemCtrl.updateItem(input.course, input.credit, input.grad);
+
+    // Update UI
+    UICtrl.updateListItem(updatedItem);
+
+    // Get total cgpa
+    const totalCgpa = ItemCtrl.getTotalCgpa();
+    // Add total cgpa to UI
+    UICtrl.showTotalCgpa(totalCgpa);
+
+    UICtrl.clearEditState();
+
+    e.preventDefault();
+
+  }
+
+  // Delete button event
+  const itemDeleteSubmit = function(e){
+    // Get current item
+    const currentItem = ItemCtrl.getCurrentItem();
+
+    // Delete from data structure
+    ItemCtrl.deleteItem(currentItem.id);
+
+    // Delete fro UI
+    UICtrl.deleteListItem(currentItem.id);
+
+    // Get total cgpa
+    const totalCgpa = ItemCtrl.getTotalCgpa() || 0;
+    // Add total cgpa to UI
+    UICtrl.showTotalCgpa(totalCgpa);
+
+    UICtrl.clearEditState();
+
+    e.preventDefault();
+  }
+
+  // Clear items event
+  const clearAllItemsClick = function(){
+    // Delete all items from data structure 
+    ItemCtrl.clearAllItems();
+
+    // Get total cgpa
+    const totalCgpa = 0;
+    // Add total cgpa to UI
+    UICtrl.showTotalCgpa(totalCgpa);
+
+    // Remove from UI
+    UICtrl.removeItems();
+
+    // Hide UL
+    UICtrl.hideList();
+  }
   // Public methods
   return {
     init: function(){
+      // Clear edit state / set initial set
+      UICtrl.clearEditState();
+
       // Fetch items from data structure
       const items = ItemCtrl.getItems();
 
@@ -167,6 +419,8 @@ const App = (function(ItemCtrl, UICtrl){
         // Populate list with items
         UICtrl.populateItemList(items);
       }
+
+      
 
       // Load event listeners
       loadEventListeners();
